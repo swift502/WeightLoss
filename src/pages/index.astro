@@ -59,6 +59,8 @@ const monthLabel = (t: number) => new Date(t).toLocaleDateString('en', { month: 
 				<text class="label" x={x(t)} y={height - margin.bottom + 24} text-anchor="middle">{monthLabel(t)}</text>
 			))}
 
+			<line class="goal" x1={margin.left} x2={width - margin.right} y1={y(target.end.weight)} y2={y(target.end.weight)}/>
+
 			<polyline class="target" points={polyline(targetLine)}/>
 			<polyline class="actual" points={polyline(points)}/>
 
@@ -71,6 +73,7 @@ const monthLabel = (t: number) => new Date(t).toLocaleDateString('en', { month: 
 
 		<figcaption>
 			<span class="key target-key">Target</span>
+			<span class="key goal-key">Goal</span>
 			<span class="key actual-key">Data</span>
 		</figcaption>
 	</figure>
@@ -94,6 +97,12 @@ const monthLabel = (t: number) => new Date(t).toLocaleDateString('en', { month: 
 	.grid {
 		stroke: var(--grid);
 		stroke-width: 1;
+	}
+
+	.goal {
+		stroke: var(--goal);
+		stroke-width: 1.5;
+		opacity: 0.55;
 	}
 
 	.label {
@@ -139,6 +148,10 @@ const monthLabel = (t: number) => new Date(t).toLocaleDateString('en', { month: 
 
 	.target-key::before {
 		background: var(--prediction);
+	}
+
+	.goal-key::before {
+		background: var(--goal);
 	}
 
 	.actual-key::before {
