@@ -1,0 +1,7 @@
+# Straight target line the actual data is compared against.
+start:
+  date: "2025-10-01"
+  weight: 80
+end:
+  date: "2026-03-01"
+  weight: 70

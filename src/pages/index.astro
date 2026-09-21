@@ -1,0 +1,147 @@
+---
+import Layout from '../layouts/Default.astro';
+import measured from '../data/data.yml';
+import target from '../data/target.yml';
+
+interface Entry {
+	date: string;
+	weight: number;
+}
+
+const time = (date: string) => Date.parse(date);
+
+const points: Entry[] = [...measured].sort((a, b) => time(a.date) - time(b.date));
+const targetLine: Entry[] = [target.start, target.end];
+
+// Chart geometry
+const width = 900;
+const height = 460;
+const margin = { top: 24, right: 24, bottom: 40, left: 52 };
+
+const times = [...targetLine, ...points].map(e => time(e.date));
+const weights = [...targetLine, ...points].map(e => e.weight);
+const tMin = Math.min(...times);
+const tMax = Math.max(...times);
+const kgMin = Math.floor((Math.min(...weights) - 1) / 2) * 2;
+const kgMax = Math.ceil((Math.max(...weights) + 1) / 2) * 2;
+
+const x = (t: number) => margin.left + (t - tMin) / (tMax - tMin) * (width - margin.left - margin.right);
+const y = (kg: number) => margin.top + (kgMax - kg) / (kgMax - kgMin) * (height - margin.top - margin.bottom);
+
+const polyline = (entries: Entry[]) => entries.map(e => `${x(time(e.date))},${y(e.weight)}`).join(' ');
+
+// Ticks
+const kgTicks = Array.from({ length: (kgMax - kgMin) / 2 + 1 }, (_, i) => kgMin + i * 2);
+
+const monthTicks: number[] = [];
+const cursor = new Date(tMin);
+cursor.setUTCDate(1);
+cursor.setUTCHours(0, 0, 0, 0);
+while (cursor.getTime() <= tMax) {
+	if (cursor.getTime() >= tMin) monthTicks.push(cursor.getTime());
+	cursor.setUTCMonth(cursor.getUTCMonth() + 1);
+}
+
+const monthLabel = (t: number) => new Date(t).toLocaleDateString('en', { month: 'short', timeZone: 'UTC' });
+---
+
+<Layout title="Tracking">
+	<figure class="chart">
+		<svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Weight over time">
+			{kgTicks.map(kg => (
+				<>
+					<line class="grid" x1={margin.left} x2={width - margin.right} y1={y(kg)} y2={y(kg)}/>
+					<text class="label" x={margin.left - 12} y={y(kg)} text-anchor="end" dominant-baseline="middle">{kg}</text>
+				</>
+			))}
+
+			{monthTicks.map(t => (
+				<text class="label" x={x(t)} y={height - margin.bottom + 24} text-anchor="middle">{monthLabel(t)}</text>
+			))}
+
+			<polyline class="target" points={polyline(targetLine)}/>
+			<polyline class="actual" points={polyline(points)}/>
+
+			{points.map(p => (
+				<circle class="dot" cx={x(time(p.date))} cy={y(p.weight)} r="4">
+					<title>{p.date} — {p.weight} kg</title>
+				</circle>
+			))}
+		</svg>
+
+		<figcaption>
+			<span class="key target-key">Target</span>
+			<span class="key actual-key">Data</span>
+		</figcaption>
+	</figure>
+</Layout>
+
+<style>
+	.chart {
+		margin: 0;
+		padding: 1.5rem;
+		background: var(--surface);
+		border-radius: 12px;
+	}
+
+	svg {
+		display: block;
+		width: 100%;
+		height: auto;
+		overflow: visible;
+	}
+
+	.grid {
+		stroke: var(--grid);
+		stroke-width: 1;
+	}
+
+	.label {
+		fill: var(--muted);
+		font-size: 13px;
+	}
+
+	.target {
+		fill: none;
+		stroke: var(--prediction);
+		stroke-width: 2;
+		stroke-dasharray: 8 6;
+	}
+
+	.actual {
+		fill: none;
+		stroke: var(--actual);
+		stroke-width: 2.5;
+		stroke-linejoin: round;
+	}
+
+	.dot {
+		fill: var(--actual);
+	}
+
+	figcaption {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 1.5rem;
+		margin-top: 1.25rem;
+		color: var(--muted);
+		font-size: 0.9rem;
+	}
+
+	.key::before {
+		content: '';
+		display: inline-block;
+		width: 14px;
+		height: 2px;
+		margin-right: 0.5rem;
+		vertical-align: middle;
+	}
+
+	.target-key::before {
+		background: var(--prediction);
+	}
+
+	.actual-key::before {
+		background: var(--actual);
+	}
+</style>
