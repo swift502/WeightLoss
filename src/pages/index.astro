@@ -46,6 +46,10 @@ const monthLabel = (t: number) => new Date(t).toLocaleDateString('en', { month: 
 ---
 
 <Layout title="Tracking">
+	<p class="repo">
+		<a href="https://github.com/swift502/WeightLoss" target="_blank" rel="noopener noreferrer">GitHub Repository</a>
+	</p>
+
 	<figure class="chart">
 		<svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Weight over time">
 			{kgTicks.map(kg => (
@@ -156,5 +160,21 @@ const monthLabel = (t: number) => new Date(t).toLocaleDateString('en', { month: 
 
 	.actual-key::before {
 		background: var(--actual);
+	}
+
+	.repo {
+		margin: 0 0 1rem;
+		text-align: center;
+		font-size: 0.9rem;
+	}
+
+	.repo a {
+		color: var(--muted);
+		text-decoration: none;
+	}
+
+	.repo a:hover {
+		color: var(--text);
+		text-decoration: underline;
 	}
 </style>
