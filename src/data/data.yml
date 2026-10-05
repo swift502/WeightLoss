@@ -1,3 +1,5 @@
 # Actual measurements, oldest first. Dates are quoted so they stay strings.
-- date: "2025-10-01"
+- date: "2026-10-01"
   weight: 78.6
+- date: "2026-10-05"
+  weight: 79.1
