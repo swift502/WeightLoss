@@ -15,6 +15,7 @@ const targetLine: Entry[] = [target.start, target.end];
 
 // Chart geometry
 const width = 900;
+const height = 600;
 const margin = { top: 24, right: 24, bottom: 40, left: 52 };
 
 const times = [...targetLine, ...points].map(e => time(e.date));
@@ -24,14 +25,8 @@ const tMax = Math.max(...times);
 const kgMin = Math.floor(Math.min(...weights)) - 1;
 const kgMax = Math.ceil(Math.max(...weights)) + 1;
 
-// Scale kg so the target line spans equal pixels horizontally and vertically (45°)
-const plotWidth = width - margin.left - margin.right;
-const targetDx = (time(target.end.date) - time(target.start.date)) / (tMax - tMin) * plotWidth;
-const pxPerKg = targetDx / Math.abs(target.start.weight - target.end.weight);
-const height = margin.top + margin.bottom + (kgMax - kgMin) * pxPerKg;
-
-const x = (t: number) => margin.left + (t - tMin) / (tMax - tMin) * plotWidth;
-const y = (kg: number) => margin.top + (kgMax - kg) * pxPerKg;
+const x = (t: number) => margin.left + (t - tMin) / (tMax - tMin) * (width - margin.left - margin.right);
+const y = (kg: number) => margin.top + (kgMax - kg) / (kgMax - kgMin) * (height - margin.top - margin.bottom);
 
 const polyline = (entries: Entry[]) => entries.map(e => `${x(time(e.date))},${y(e.weight)}`).join(' ');
 
@@ -47,12 +42,24 @@ while (cursor.getTime() <= tMax) {
 	cursor.setUTCMonth(cursor.getUTCMonth() + 1);
 }
 
+const day = 24 * 60 * 60 * 1000;
+const mondayTicks: number[] = [];
+const firstDay = new Date(tMin);
+firstDay.setUTCHours(0, 0, 0, 0);
+for (let t = firstDay.getTime() + ((8 - firstDay.getUTCDay()) % 7) * day; t <= tMax; t += 7 * day) {
+	if (t >= tMin) mondayTicks.push(t);
+}
+
 const monthLabel = (t: number) => new Date(t).toLocaleDateString('en', { month: 'short', timeZone: 'UTC' });
 ---
 
 <Layout title="Tracking">
 	<figure class="chart">
 		<svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Weight over time">
+			{mondayTicks.map(t => (
+				<line class="grid" x1={x(t)} x2={x(t)} y1={y(kgMax)} y2={y(kgMin)}/>
+			))}
+
 			{kgTicks.map(kg => (
 				<>
 					<line class="grid" x1={margin.left} x2={width - margin.right} y1={y(kg)} y2={y(kg)}/>
