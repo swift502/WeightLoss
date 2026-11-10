@@ -111,21 +111,23 @@ const nextMondayLabel = new Date(nextMonday).toLocaleDateString('de-DE', { day: 
 <style>
 	.chart {
 		margin: 0;
-		padding: 2rem;
+		/* 16px at the 960px max width; everything inside uses em so it scales with the SVG */
+		font-size: calc(100cqi / 60);
+		padding: 2em;
 		background: var(--surface);
-		border-radius: 12px;
+		border-radius: 0.75em;
 	}
 
 	.next-target {
 		display: flex;
 		flex-direction: column;
-		gap: 0.25rem;
-		margin: 0 0 1rem;
+		gap: 0.25em;
+		margin: 0 0 1em;
 	}
 
 	.next-target-label {
 		color: var(--muted);
-		font-size: 0.8rem;
+		font-size: 0.8em;
 		letter-spacing: 0.08em;
 		text-transform: uppercase;
 	}
@@ -133,7 +135,7 @@ const nextMondayLabel = new Date(nextMonday).toLocaleDateString('de-DE', { day: 
 	.next-target-value {
 		color: var(--text);
 		opacity: 0.8;
-		font-size: 1.75rem;
+		font-size: 1.75em;
 		font-weight: 600;
 		font-variant-numeric: tabular-nums;
 	}
@@ -188,18 +190,18 @@ const nextMondayLabel = new Date(nextMonday).toLocaleDateString('de-DE', { day: 
 	figcaption {
 		display: flex;
 		flex-wrap: wrap;
-		gap: 1.5rem;
-		margin-top: 1rem;
+		gap: 1.667em;
+		margin-top: 1.111em;
 		color: var(--muted);
-		font-size: 0.9rem;
+		font-size: 0.9em;
 	}
 
 	.key::before {
 		content: '';
 		display: inline-block;
-		width: 14px;
+		width: 0.972em;
 		height: 2px;
-		margin-right: 0.5rem;
+		margin-right: 0.556em;
 		vertical-align: middle;
 	}
 
