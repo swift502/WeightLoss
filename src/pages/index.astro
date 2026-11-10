@@ -16,7 +16,7 @@ const targetLine: Entry[] = [target.start, target.end];
 // Chart geometry
 const width = 900;
 const height = 600;
-const margin = { top: 24, right: 24, bottom: 40, left: 52 };
+const margin = { top: 12, right: 24, bottom: 40, left: 40 };
 
 const times = [...targetLine, ...points].map(e => time(e.date));
 const weights = [...targetLine, ...points].map(e => e.weight);
@@ -51,10 +51,27 @@ for (let t = firstDay.getTime() + ((8 - firstDay.getUTCDay()) % 7) * day; t <= t
 }
 
 const monthLabel = (t: number) => new Date(t).toLocaleDateString('en', { month: 'short', timeZone: 'UTC' });
+
+// Next week target: upcoming Monday after the last measurement
+const last = points[points.length - 1];
+const lastTime = time(last.date);
+const daysToMonday = (8 - new Date(lastTime).getUTCDay()) % 7 || 7;
+const nextMonday = lastTime + daysToMonday * day;
+const projected = last.weight - 0.5 * daysToMonday / 7;
+const targetStart = time(target.start.date);
+const targetEnd = time(target.end.date);
+const onTargetLine = target.start.weight + (nextMonday - targetStart) / (targetEnd - targetStart) * (target.end.weight - target.start.weight);
+const [rangeLow, rangeHigh] = [projected, onTargetLine].sort((a, b) => a - b);
+const nextMondayLabel = new Date(nextMonday).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', timeZone: 'UTC' });
 ---
 
 <Layout title="Tracking">
 	<figure class="chart">
+		<p class="next-target">
+			<span class="next-target-label">Next week target · {nextMondayLabel}</span>
+			<span class="next-target-value">{rangeLow.toFixed(1)}<small>kg</small> – {rangeHigh.toFixed(1)}<small>kg</small></span>
+		</p>
+
 		<svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Weight over time">
 			{mondayTicks.map(t => (
 				<line class="grid" x1={x(t)} x2={x(t)} y1={y(kgMax)} y2={y(kgMin)}/>
@@ -94,9 +111,37 @@ const monthLabel = (t: number) => new Date(t).toLocaleDateString('en', { month: 
 <style>
 	.chart {
 		margin: 0;
-		padding: 1.5rem;
+		padding: 2rem;
 		background: var(--surface);
 		border-radius: 12px;
+	}
+
+	.next-target {
+		display: flex;
+		flex-direction: column;
+		gap: 0.25rem;
+		margin: 0 0 1rem;
+	}
+
+	.next-target-label {
+		color: var(--muted);
+		font-size: 0.8rem;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+	}
+
+	.next-target-value {
+		color: var(--text);
+		opacity: 0.8;
+		font-size: 1.75rem;
+		font-weight: 600;
+		font-variant-numeric: tabular-nums;
+	}
+
+	.next-target-value small {
+		margin-left: 0.15em;
+		font-size: 0.55em;
+		font-weight: 400;
 	}
 
 	svg {
@@ -144,7 +189,7 @@ const monthLabel = (t: number) => new Date(t).toLocaleDateString('en', { month: 
 		display: flex;
 		flex-wrap: wrap;
 		gap: 1.5rem;
-		margin-top: 1.25rem;
+		margin-top: 1rem;
 		color: var(--muted);
 		font-size: 0.9rem;
 	}
