@@ -69,7 +69,7 @@ const nextMondayLabel = new Date(nextMonday).toLocaleDateString('de-DE', { day: 
 	<figure class="chart">
 		<p class="next-target">
 			<span class="next-target-label">Next week target · {nextMondayLabel}</span>
-			<span class="next-target-value">{rangeLow.toFixed(1)}<small>kg</small> – {rangeHigh.toFixed(1)}<small>kg</small></span>
+			<span class="next-target-value">{rangeLow.toFixed(1)}<small>kg</small> - {rangeHigh.toFixed(1)}<small>kg</small></span>
 		</p>
 
 		<svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Weight over time">
