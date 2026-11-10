@@ -95,7 +95,7 @@ const nextMondayLabel = new Date(nextMonday).toLocaleDateString('de-DE', { day: 
 
 			{points.map(p => (
 				<circle class="dot" cx={x(time(p.date))} cy={y(p.weight)} r="4">
-					<title>{p.date} — {p.weight} kg</title>
+					<title>{p.weight} kg</title>
 				</circle>
 			))}
 		</svg>
