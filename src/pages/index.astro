@@ -87,7 +87,7 @@ const nextMondayLabel = new Date(nextMonday).toLocaleDateString('de-DE', { day: 
 
 // Time progress based on latest measurement date
 const progressPercent = Math.round(((lastTime - targetStart) / (targetEnd - targetStart)) * 100);
-const currentWeek = Math.floor((lastTime - targetStart) / week) + 1;
+const weeksFinished = Math.floor((lastTime - targetStart) / week);
 const totalWeeks = Math.ceil((targetEnd - targetStart) / week);
 
 const fullDate = (t: number) => new Date(t).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC' });
@@ -106,7 +106,7 @@ const goalDelta = daysVsTarget === null
 			<div class="stat">
 				<span class="stat-label">Time elapsed</span>
 				<span class="stat-value">{progressPercent}<small>%</small></span>
-				<span class="stat-note">Week {currentWeek} / {totalWeeks}</span>
+				<span class="stat-note">{weeksFinished} / {totalWeeks} weeks done</span>
 			</div>
 			<div class="stat">
 				<span class="stat-label">Next week · {nextMondayLabel}</span>
