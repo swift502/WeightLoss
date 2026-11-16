@@ -12,13 +12,13 @@ const time = (date: string) => Date.parse(date);
 
 const day = 24 * 60 * 60 * 1000;
 const week = 7 * day;
-const weeklyTarget = 0.5;
 
 const points: Entry[] = [...measured].sort((a, b) => time(a.date) - time(b.date));
 const targetLine: Entry[] = [target.start, target.end];
 const targetStart = time(target.start.date);
 const targetEnd = time(target.end.date);
 const goalWeight = target.end.weight;
+const weeklyTarget = (target.start.weight - goalWeight) / ((targetEnd - targetStart) / week);
 
 // Trend: least-squares fit over actual timestamps, so irregular intervals are weighted correctly
 const meanT = points.reduce((s, p) => s + time(p.date), 0) / points.length;
