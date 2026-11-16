@@ -10,16 +10,41 @@ interface Entry {
 
 const time = (date: string) => Date.parse(date);
 
+const day = 24 * 60 * 60 * 1000;
+const week = 7 * day;
+const weeklyTarget = 0.5;
+
 const points: Entry[] = [...measured].sort((a, b) => time(a.date) - time(b.date));
 const targetLine: Entry[] = [target.start, target.end];
+const targetStart = time(target.start.date);
+const targetEnd = time(target.end.date);
+const goalWeight = target.end.weight;
+
+// Trend: least-squares fit over actual timestamps, so irregular intervals are weighted correctly
+const meanT = points.reduce((s, p) => s + time(p.date), 0) / points.length;
+const meanW = points.reduce((s, p) => s + p.weight, 0) / points.length;
+const varT = points.reduce((s, p) => s + (time(p.date) - meanT) ** 2, 0);
+const slope = varT > 0 ? points.reduce((s, p) => s + (time(p.date) - meanT) * (p.weight - meanW), 0) / varT : 0;
+const trendAt = (t: number) => meanW + slope * (t - meanT);
+const avgPerWeek = -slope * week;
+
+const firstTime = time(points[0].date);
+const lastTime = time(points[points.length - 1].date);
+const goalTime = slope < 0 ? meanT + (goalWeight - meanW) / slope : null;
+// Keep a very slow trend from stretching the chart indefinitely
+const trendLimit = targetEnd + (targetEnd - targetStart) / 2;
+const trendEnd = Math.max(lastTime, Math.min(goalTime ?? lastTime, trendLimit));
+const trendLine: Entry[] = [firstTime, trendEnd].map(t => ({ date: new Date(t).toISOString(), weight: trendAt(t) }));
+const goalOnChart = goalTime !== null && goalTime <= trendEnd;
+const daysVsTarget = goalTime !== null ? Math.round((targetEnd - goalTime) / day) : null;
 
 // Chart geometry
 const width = 900;
 const height = 600;
 const margin = { top: 12, right: 24, bottom: 40, left: 40 };
 
-const times = [...targetLine, ...points].map(e => time(e.date));
-const weights = [...targetLine, ...points].map(e => e.weight);
+const times = [...targetLine, ...points, ...trendLine].map(e => time(e.date));
+const weights = [...targetLine, ...points, ...trendLine].map(e => e.weight);
 const tMin = Math.min(...times);
 const tMax = Math.max(...times);
 const kgMin = Math.floor(Math.min(...weights)) - 1;
@@ -42,7 +67,6 @@ while (cursor.getTime() <= tMax) {
 	cursor.setUTCMonth(cursor.getUTCMonth() + 1);
 }
 
-const day = 24 * 60 * 60 * 1000;
 const mondayTicks: number[] = [];
 const firstDay = new Date(tMin);
 firstDay.setUTCHours(0, 0, 0, 0);
@@ -54,37 +78,51 @@ const monthLabel = (t: number) => new Date(t).toLocaleDateString('en', { month: 
 
 // Next week target: upcoming Monday after the last measurement
 const last = points[points.length - 1];
-const lastTime = time(last.date);
 const daysToMonday = (8 - new Date(lastTime).getUTCDay()) % 7 || 7;
 const nextMonday = lastTime + daysToMonday * day;
-const projected = last.weight - 0.5 * daysToMonday / 7;
-const targetStart = time(target.start.date);
-const targetEnd = time(target.end.date);
+const projected = last.weight - weeklyTarget * daysToMonday / 7;
 const onTargetLine = target.start.weight + (nextMonday - targetStart) / (targetEnd - targetStart) * (target.end.weight - target.start.weight);
 const [rangeLow, rangeHigh] = [projected, onTargetLine].sort((a, b) => a - b);
 const nextMondayLabel = new Date(nextMonday).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', timeZone: 'UTC' });
 
-// Time progress based on latest measurement date within target range
-const latestInRange = points.filter(p => {
-	const t = time(p.date);
-	return t >= targetStart && t <= targetEnd;
-}).at(-1);
-const progressPercent = latestInRange
-	? Math.round(((time(latestInRange.date) - targetStart) / (targetEnd - targetStart)) * 100)
-	: 0;
+// Time progress based on latest measurement date
+const progressPercent = Math.round(((lastTime - targetStart) / (targetEnd - targetStart)) * 100);
+const currentWeek = Math.floor((lastTime - targetStart) / week) + 1;
+const totalWeeks = Math.ceil((targetEnd - targetStart) / week);
+
+const fullDate = (t: number) => new Date(t).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC' });
+const goalDateLabel = goalTime !== null ? fullDate(goalTime) : '—';
+const targetEndLabel = fullDate(targetEnd);
+const goalDelta = daysVsTarget === null
+	? 'Not trending down'
+	: daysVsTarget === 0
+		? 'On target date'
+		: `${Math.abs(daysVsTarget)} days ${daysVsTarget > 0 ? 'early' : 'late'}`;
 ---
 
 <Layout title="Tracking">
 	<figure class="chart">
-		<div class="header">
-			<p class="next-target">
-				<span class="next-target-label">Next week target · {nextMondayLabel}</span>
-				<span class="next-target-value">{rangeLow.toFixed(1)}<small>kg</small> - {rangeHigh.toFixed(1)}<small>kg</small></span>
-			</p>
-			<p class="progress">
-				<span class="progress-percent">{progressPercent}%</span>
-				<span class="progress-label">Complete</span>
-			</p>
+		<div class="stats">
+			<div class="stat">
+				<span class="stat-label">Time elapsed</span>
+				<span class="stat-value">{progressPercent}<small>%</small></span>
+				<span class="stat-note">Week {currentWeek} / {totalWeeks}</span>
+			</div>
+			<div class="stat">
+				<span class="stat-label">Next week · {nextMondayLabel}</span>
+				<span class="stat-value">{rangeLow.toFixed(1)}–{rangeHigh.toFixed(1)}<small>kg</small></span>
+				<span class="stat-note">Target range</span>
+			</div>
+			<div class="stat">
+				<span class="stat-label">Average rate</span>
+				<span class="stat-value trend-value">{avgPerWeek.toFixed(2)}<small>kg/wk</small></span>
+				<span class="stat-note">Target {weeklyTarget.toFixed(2)} kg/wk</span>
+			</div>
+			<div class="stat">
+				<span class="stat-label">Projected goal · {goalWeight}kg</span>
+				<span class="stat-value trend-value">{goalDateLabel}</span>
+				<span class="stat-note">{goalDelta} · target {targetEndLabel}</span>
+			</div>
 		</div>
 
 		<svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Weight over time">
@@ -106,7 +144,14 @@ const progressPercent = latestInRange
 			<line class="goal" x1={margin.left} x2={width - margin.right} y1={y(target.end.weight)} y2={y(target.end.weight)}/>
 
 			<polyline class="target" points={polyline(targetLine)}/>
+			<polyline class="trend" points={polyline(trendLine)}/>
 			<polyline class="actual" points={polyline(points)}/>
+
+			{goalOnChart && (
+				<circle class="goal-dot" cx={x(goalTime!)} cy={y(goalWeight)} r="5">
+					<title>{goalDateLabel}</title>
+				</circle>
+			)}
 
 			{points.map(p => (
 				<circle class="dot" cx={x(time(p.date))} cy={y(p.weight)} r="4">
@@ -117,6 +162,7 @@ const progressPercent = latestInRange
 
 		<figcaption>
 			<span class="key target-key">Target</span>
+			<span class="key trend-key">Trend</span>
 			<span class="key goal-key">Goal</span>
 			<span class="key actual-key">Data</span>
 		</figcaption>
@@ -133,66 +179,62 @@ const progressPercent = latestInRange
 		border-radius: 0.75em;
 	}
 
-	.header {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 2em;
-		margin-bottom: 1.25em;
+	.stats {
+		display: grid;
+		grid-template-columns: repeat(4, 1fr);
+		margin-bottom: 1.5em;
 	}
 
-	.next-target {
+	.stat {
 		display: flex;
 		flex-direction: column;
-		gap: 0.25em;
-		margin: 0;
+		gap: 0.3em;
+		padding: 0 1.25em;
+		border-left: 1px solid var(--grid);
 	}
 
-	.next-target-label {
+	.stat:first-child {
+		padding-left: 0;
+		border-left: none;
+	}
+
+	.stat:last-child {
+		padding-right: 0;
+	}
+
+	.stat-label {
 		color: var(--muted);
-		font-size: 0.8em;
+		font-size: 0.7em;
 		letter-spacing: 0.08em;
 		text-transform: uppercase;
+		white-space: nowrap;
 	}
 
-	.next-target-value {
+	.stat-value {
 		color: var(--text);
-		opacity: 0.8;
-		font-size: 1.75em;
+		opacity: 0.85;
+		font-size: 1.6em;
 		font-weight: 600;
 		font-variant-numeric: tabular-nums;
+		line-height: 1.1;
+		white-space: nowrap;
 	}
 
-	.next-target-value small {
+	.stat-value small {
 		margin-left: 0.15em;
 		font-size: 0.55em;
 		font-weight: 400;
 	}
 
-	.progress {
-		display: flex;
-		flex-direction: column;
-		align-items: flex-end;
-		gap: 0.15em;
-		margin: 0;
-		text-align: right;
+	.trend-value {
+		color: var(--trend);
+		opacity: 1;
 	}
 
-	.progress-percent {
-		color: var(--text);
-		opacity: 0.85;
-		font-size: 1.85em;
-		font-weight: 600;
-		font-variant-numeric: tabular-nums;
-		line-height: 1;
-	}
-
-	.progress-label {
+	.stat-note {
 		color: var(--prediction);
 		font-size: 0.75em;
-		font-weight: 500;
-		letter-spacing: 0.06em;
-		text-transform: uppercase;
+		white-space: nowrap;
 	}
 
 	svg {
@@ -223,6 +265,20 @@ const progressPercent = latestInRange
 		stroke: var(--prediction);
 		stroke-width: 2;
 		stroke-dasharray: 8 6;
+	}
+
+	.trend {
+		fill: none;
+		stroke: var(--trend);
+		stroke-width: 2;
+		stroke-dasharray: 2 5;
+		stroke-linecap: round;
+	}
+
+	.goal-dot {
+		fill: var(--surface);
+		stroke: var(--trend);
+		stroke-width: 2;
 	}
 
 	.actual {
@@ -256,6 +312,10 @@ const progressPercent = latestInRange
 
 	.target-key::before {
 		background: var(--prediction);
+	}
+
+	.trend-key::before {
+		background: var(--trend);
 	}
 
 	.goal-key::before {

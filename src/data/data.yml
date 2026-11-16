@@ -1,14 +1,4 @@
 # Actual measurements, oldest first. Dates are quoted so they stay strings.
-- date: "2026-10-01"
-  weight: 78.6
-- date: "2026-10-05"
-  weight: 79.1
-- date: "2026-10-12"
-  weight: 78.6
-- date: "2026-10-19"
-  weight: 80.4
-- date: "2026-10-29"
-  weight: 79.3
 - date: "2026-11-03"
   weight: 79.7
 - date: "2026-11-09"
