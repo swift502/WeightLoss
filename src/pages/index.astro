@@ -63,10 +63,20 @@ const targetEnd = time(target.end.date);
 const onTargetLine = target.start.weight + (nextMonday - targetStart) / (targetEnd - targetStart) * (target.end.weight - target.start.weight);
 const [rangeLow, rangeHigh] = [projected, onTargetLine].sort((a, b) => a - b);
 const nextMondayLabel = new Date(nextMonday).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', timeZone: 'UTC' });
+
+// Time progress based on latest measurement date within target range
+const latestInRange = points.filter(p => {
+	const t = time(p.date);
+	return t >= targetStart && t <= targetEnd;
+}).at(-1);
+const progressPercent = latestInRange
+	? Math.round(((time(latestInRange.date) - targetStart) / (targetEnd - targetStart)) * 100)
+	: 0;
 ---
 
 <Layout title="Tracking">
 	<figure class="chart">
+		<p class="progress-badge">{progressPercent}%</p>
 		<p class="next-target">
 			<span class="next-target-label">Next week target · {nextMondayLabel}</span>
 			<span class="next-target-value">{rangeLow.toFixed(1)}<small>kg</small> - {rangeHigh.toFixed(1)}<small>kg</small></span>
@@ -116,6 +126,19 @@ const nextMondayLabel = new Date(nextMonday).toLocaleDateString('de-DE', { day: 
 		padding: 2em;
 		background: var(--surface);
 		border-radius: 0.75em;
+		position: relative;
+	}
+
+	.progress-badge {
+		position: absolute;
+		top: 1.2em;
+		right: 1.5em;
+		margin: 0;
+		color: var(--muted);
+		font-size: 1.1em;
+		font-weight: 600;
+		font-variant-numeric: tabular-nums;
+		opacity: 0.7;
 	}
 
 	.next-target {
