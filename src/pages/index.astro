@@ -76,11 +76,16 @@ const progressPercent = latestInRange
 
 <Layout title="Tracking">
 	<figure class="chart">
-		<p class="progress-badge">{progressPercent}% Complete</p>
-		<p class="next-target">
-			<span class="next-target-label">Next week target · {nextMondayLabel}</span>
-			<span class="next-target-value">{rangeLow.toFixed(1)}<small>kg</small> - {rangeHigh.toFixed(1)}<small>kg</small></span>
-		</p>
+		<div class="header">
+			<p class="next-target">
+				<span class="next-target-label">Next week target · {nextMondayLabel}</span>
+				<span class="next-target-value">{rangeLow.toFixed(1)}<small>kg</small> - {rangeHigh.toFixed(1)}<small>kg</small></span>
+			</p>
+			<p class="progress">
+				<span class="progress-percent">{progressPercent}%</span>
+				<span class="progress-label">Complete</span>
+			</p>
+		</div>
 
 		<svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Weight over time">
 			{mondayTicks.map(t => (
@@ -126,28 +131,21 @@ const progressPercent = latestInRange
 		padding: 2em;
 		background: var(--surface);
 		border-radius: 0.75em;
-		position: relative;
 	}
 
-	.progress-badge {
-		position: absolute;
-		top: 1.4em;
-		right: 1.6em;
-		margin: 0;
-		color: var(--prediction);
-		font-size: 1.35em;
-		font-weight: 600;
-		font-variant-numeric: tabular-nums;
-		letter-spacing: 0.01em;
-		line-height: 1;
-		text-align: right;
+	.header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 2em;
+		margin-bottom: 1.25em;
 	}
 
 	.next-target {
 		display: flex;
 		flex-direction: column;
 		gap: 0.25em;
-		margin: 0 0 1em;
+		margin: 0;
 	}
 
 	.next-target-label {
@@ -169,6 +167,32 @@ const progressPercent = latestInRange
 		margin-left: 0.15em;
 		font-size: 0.55em;
 		font-weight: 400;
+	}
+
+	.progress {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-end;
+		gap: 0.15em;
+		margin: 0;
+		text-align: right;
+	}
+
+	.progress-percent {
+		color: var(--text);
+		opacity: 0.85;
+		font-size: 1.85em;
+		font-weight: 600;
+		font-variant-numeric: tabular-nums;
+		line-height: 1;
+	}
+
+	.progress-label {
+		color: var(--prediction);
+		font-size: 0.75em;
+		font-weight: 500;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
 	}
 
 	svg {
