@@ -36,7 +36,6 @@ const trendLimit = targetEnd + (targetEnd - targetStart) / 2;
 const trendEnd = Math.max(lastTime, Math.min(goalTime ?? lastTime, trendLimit));
 const trendLine: Entry[] = [firstTime, trendEnd].map(t => ({ date: new Date(t).toISOString(), weight: trendAt(t) }));
 const goalOnChart = goalTime !== null && goalTime <= trendEnd;
-const daysVsTarget = goalTime !== null ? Math.round((targetEnd - goalTime) / day) : null;
 
 // Chart geometry
 const width = 900;
@@ -76,11 +75,10 @@ for (let t = firstDay.getTime() + ((8 - firstDay.getUTCDay()) % 7) * day; t <= t
 
 const monthLabel = (t: number) => new Date(t).toLocaleDateString('en', { month: 'short', timeZone: 'UTC' });
 
-// Next week target: upcoming Monday after the last measurement
-const last = points[points.length - 1];
+// Next week range: trend line vs target line at the upcoming Monday after the last measurement
 const daysToMonday = (8 - new Date(lastTime).getUTCDay()) % 7 || 7;
 const nextMonday = lastTime + daysToMonday * day;
-const projected = last.weight - weeklyTarget * daysToMonday / 7;
+const projected = trendAt(nextMonday);
 const onTargetLine = target.start.weight + (nextMonday - targetStart) / (targetEnd - targetStart) * (target.end.weight - target.start.weight);
 const [rangeLow, rangeHigh] = [projected, onTargetLine].sort((a, b) => a - b);
 const nextMondayLabel = new Date(nextMonday).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', timeZone: 'UTC' });
@@ -93,11 +91,6 @@ const totalWeeks = Math.ceil((targetEnd - targetStart) / week);
 const fullDate = (t: number) => new Date(t).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC' });
 const goalDateLabel = goalTime !== null ? fullDate(goalTime) : '—';
 const targetEndLabel = fullDate(targetEnd);
-const goalDelta = daysVsTarget === null
-	? 'Not trending down'
-	: daysVsTarget === 0
-		? 'On target date'
-		: `${Math.abs(daysVsTarget)} days ${daysVsTarget > 0 ? 'early' : 'late'}`;
 ---
 
 <Layout title="Tracking">
@@ -109,19 +102,19 @@ const goalDelta = daysVsTarget === null
 				<span class="stat-note">{weeksFinished} / {totalWeeks} weeks done</span>
 			</div>
 			<div class="stat">
-				<span class="stat-label">Next week · {nextMondayLabel}</span>
+				<span class="stat-label">Next week target</span>
 				<span class="stat-value">{rangeLow.toFixed(1)}–{rangeHigh.toFixed(1)}<small>kg</small></span>
-				<span class="stat-note">Target range</span>
+				<span class="stat-note">For {nextMondayLabel}</span>
 			</div>
 			<div class="stat">
 				<span class="stat-label">Average rate</span>
-				<span class="stat-value trend-value">{avgPerWeek.toFixed(2)}<small>kg/wk</small></span>
+				<span class="stat-value">{avgPerWeek.toFixed(2)}<small>kg/wk</small></span>
 				<span class="stat-note">Target {weeklyTarget.toFixed(2)} kg/wk</span>
 			</div>
 			<div class="stat">
-				<span class="stat-label">Projected goal · {goalWeight}kg</span>
-				<span class="stat-value trend-value">{goalDateLabel}</span>
-				<span class="stat-note">{goalDelta} · target {targetEndLabel}</span>
+				<span class="stat-label">Projected goal hit</span>
+				<span class="stat-value">{goalDateLabel}</span>
+				<span class="stat-note">Target {targetEndLabel}</span>
 			</div>
 		</div>
 
@@ -224,11 +217,6 @@ const goalDelta = daysVsTarget === null
 		margin-left: 0.15em;
 		font-size: 0.55em;
 		font-weight: 400;
-	}
-
-	.trend-value {
-		color: var(--trend);
-		opacity: 1;
 	}
 
 	.stat-note {
